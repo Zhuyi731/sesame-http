@@ -51,10 +51,10 @@ class Parser {
             case "folder html":
                 {
                     let htmlContent;
-                    dataType == "folder html" && (filePath += "\index");
+                    dataType == "folder html" && (filePath = path.join(filePath, "index.html"));
                     try {
-                        htmlContent = fs.readFileSync(path.join(filePath, "index.html"));
-                        ret.data = JSON.parse(htmlContent);
+                        htmlContent = fs.readFileSync(filePath,"utf-8");
+                        ret.data = htmlContent;
                     } catch (e) {
                         console.log(e);
                         throw e;

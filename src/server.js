@@ -15,17 +15,19 @@ class Sesame {
         this.server = null; //server entity
         this.app = express();
         this.requestRematchRules = {};
+        this.env = "browser";
         this.config = {
-            engineTemplate: "html"
+            engineTemplate: "html",
+            cwd: process.cwd(), //程序运行的路径
+            where: "/", //需要监视的相对路径
+            port: 8080 //http服务器监听的端口
         };
     }
 
-    setConfig(inputConfig) {
-        for (let prop in inputConfig) {
-            if (inputConfig.hasOwnProperty(prop) && this.config[prop]) {
-                this.config[prop] = inputConfig[prop];
-            }
-        }
+    setConfig(contentPath) {
+        contentPath = contentPath || process.cwd();
+        this.where = "/";
+        this.cwd = contentPath;
     }
 
     rules() {
@@ -33,21 +35,31 @@ class Sesame {
     }
 
     open(port = "8080", where = "/", cwd) {
-        this._useMiddleware(cwd, where);
-        this._interceptRequest();
-        this.cwd = cwd;
-        this.port = port;
-        this.where = where;
-        schemeParser.setConfig({
-            cwd,
-            where
-        });
 
-        this.server = this.app.listen(~~port, () => {
-            let host = this.server.address().address,
-                port = this.server.address().port;
-            console.log('Sesame http server is listening at http://%s:%s', host, port);
-            child_process.exec(`open http://${host}:${port}`);
+        if (this.env == "browser") {
+            this.config.cwd = cwd;
+            this.config.port = port;
+            this.config.where = where;
+        }
+
+        this._useMiddleware();
+        this._interceptRequest();
+
+        if (this.env == "browser") {
+            //将web_ui设置为静态资源目录
+            this.app.use(express.static(path.join(this.config.cwd, this.config.where)));
+
+            this.server = this.app.listen(~~port, () => {
+                let host = this.server.address().address,
+                    port = this.server.address().port;
+                console.log('Sesame http server is listening at http://%s:%s', host, port);
+                child_process.exec(`open http://${host}:${port}`);
+            });
+        }
+
+        schemeParser.setConfig({
+            cwd: this.cwd,
+            where: this.where
         });
     }
 
@@ -55,9 +67,11 @@ class Sesame {
      * 专门给webpack调用的方法
      * @param {*express实例} app
      */
-    webpack(app) {
+    webpack(app, contentPath) {
         this.app = app;
-        this.webpackBeforeOpen(app);
+        this.setConfig(contentPath);
+        this.webpackBefore(app);
+        this.env = "webpack";
         this.open();
     }
 
@@ -66,17 +80,15 @@ class Sesame {
      * 可以在中间添加自己的中间件以及路由
      * @param {*} app 
      */
-    webpackBeforeOpen(app) {
+    webpackBefore(app) {
         //If you want change some behaviors of app.You can override this method
     }
 
     /**
      * 使用express中间件
-     * @param {*当前工作路径} cwd 
-     * @param {*需要开启http服务器的路径} where 
      */
-    _useMiddleware(cwd, where) {
-        let workingDir = path.join(cwd, where),
+    _useMiddleware() {
+        let workingDir = path.join(this.config.cwd, this.config.where),
             app = this.app;
 
         //设置解析引擎为config中的模板
@@ -91,9 +103,6 @@ class Sesame {
 
         //使用cookiePaser解析请求cookie
         app.use(cookieParser());
-
-        //将web_ui设置为静态资源目录
-        app.use(express.static(workingDir));
 
         //使用morgan的日志功能
         app.use(morgan('dev'));
@@ -112,7 +121,7 @@ class Sesame {
                 if (dataType == "not defined") {
                     console.log(`[${req.method}] : ${fileName}  没有找到对应的请求文件或请求规则`);
                 } else {
-                    parsedData = schemeParser.parse(fileName, dataType, req, res)
+                    parsedData = schemeParser.parse(fileName, dataType, req, res);
                 }
 
                 if (parsedData) {
@@ -136,7 +145,6 @@ class Sesame {
     //查找请求的路径下是否有对应的数据文件  没有则返回 not defined
     _findDataType(fileName) {
         let prefix = path.join(this.cwd, this.where, fileName);
-
 
         //如果请求路径是文件夹,则检查文件夹下是否有index.*类型文件，有则使用下面的文件作为数据源
         if (fs.existsSync(prefix) && fs.statSync(prefix).isDirectory()) {
@@ -164,7 +172,7 @@ class Sesame {
         }
     }
 
-};
+}
 let sesame = new Sesame();
 
 

@@ -36,7 +36,7 @@ module.exports = {
     //详细文档       http://eslint.cn/docs/rules
     "quotes": [0, "double"], //引号类型  强制 "" '' 
     "semi": [1, "always"], //语句强制分号结尾
-    "no-console": 2, //不允许console  建议调试环境关闭 
+    "no-console": 0, //不允许console  建议调试环境关闭 
     //TODO 不清楚什么意思 by pjl
     "no-alert": 0, //禁止使用alert confirm prompt
     "no-cond-assign": 2, //禁止在条件表达式中使用赋值语句
