@@ -1,10 +1,10 @@
-document.getElementById("send-btn").onclick(function() {
-
-});
+document.getElementById("send-btn").onclick = function() {
+    getData("/getData", function() {});
+};
 
 function getData(url, callback) {
     var xhr;
-    if (window.XMLHtppRequest) {
+    if (window.XMLHttpRequest) {
         xhr = new XMLHttpRequest();
     } else {
         xhr = ActiveXObject("Microsoft.XMLHTTP");
@@ -17,7 +17,9 @@ function getData(url, callback) {
             }
         }
     };
-    
+
     xhr.open("POST", url, true);
     xhr.send();
+
+
 }

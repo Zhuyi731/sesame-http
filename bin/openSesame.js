@@ -3,6 +3,7 @@
 const inquirer = require("inquirer"); //a tool for cli interaction with questions
 const program = require("commander"); //a tool to parse command interface arguments
 const sesame = require("../src/server");
+const path = require("path");
 
 HelloSesame();
 
@@ -10,9 +11,9 @@ program.version(require('../package').version)
     .usage('<command> [options],use order(open-sesame -h) for help information')
     .option("-p,--port", "set a port which the http-server will listen to")
     .option("-w,--where", "set the path you want to listen")
-    .parse(process.argv);;
+    .parse(process.argv);
 
-sesame.open(program.port, program.where, process.cwd());
+sesame.openLocal(program.port, path.join(process.cwd(), (program.where || "./")));
 
 function HelloSesame() {
     console.log("");

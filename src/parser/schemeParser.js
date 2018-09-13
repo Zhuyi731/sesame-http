@@ -5,8 +5,7 @@ const Random = require("../random/Random");
 class Parser {
     constructor() {
         this.options = {
-            cwd: process.cwd(),
-            where: "/"
+            httpRootPath: null
         };
         this.Random = Random;
 
@@ -53,7 +52,7 @@ class Parser {
                     let htmlContent;
                     dataType == "folder html" && (filePath = path.join(filePath, "index.html"));
                     try {
-                        htmlContent = fs.readFileSync(filePath,"utf-8");
+                        htmlContent = fs.readFileSync(filePath, "utf-8");
                         ret.data = htmlContent;
                     } catch (e) {
                         console.log(e);
@@ -92,11 +91,17 @@ class Parser {
          * 检查js配置文件中有没有$type这个属性
          * 有这个属性则说明需要对response进行一些奇特的操作，比如返回文件，修改状态码等等
          */
+
+        //如果需要做预处理则进入预处理
+        if (config.hasOwnProperty("$before")) {
+            config.$before(req);
+        }
+
         if (config.hasOwnProperty("$response")) {
             switch (config.$response) {
                 case "file":
                     {
-
+                        //TODO:需要支持文件类型返回                        
                     }
                     break;
                 default:
@@ -108,22 +113,27 @@ class Parser {
         } else {
             //深赋值一份，避免funcion类型的数据被覆盖
             let copyData = this._deepClone(config);
-            //如果需要做预处理则进入预处理
-            !!config.$beforeParse && config.$beforeParse(req);
             //获取解析后的数据
-            copyData = this._parseProp(copyData, req, res);
+            copyData = this._parseProp(copyData);
             return copyData;
         }
     }
 
+    _toJsonScheme(json) {
+        let copyJson = this._deepClone(json);
+        //获取解析后的数据
+        copyJson = this._parseProp(copyJson);
+        return copyJson;
+    }
+
     //递归获取prop
-    _parseProp(curProp, req, res) {
+    _parseProp(curProp) {
         let ret;
         switch (Object.prototype.toString.call(curProp)) {
             //如果是function 则传入request参数并采用function返回的结果
             case "[object Function]":
                 {
-                    ret = curProp(req);
+                    ret = curProp();
                 }
                 break;
                 //如果是对象类型的话，需要判断一下对象是否有$type属性 ，如果有$type属性则说明该对象是需要随机生成的
@@ -174,7 +184,7 @@ class Parser {
 
         if (!!mod && require.cache[mod]) {
             require.cache[mod].children.forEach(child => {
-                clearRequireCache(child)
+                this._clearRequireCache(child);
             }, this);
             delete require.cache[mod];
         }
