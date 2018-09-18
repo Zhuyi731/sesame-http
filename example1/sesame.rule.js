@@ -1,11 +1,9 @@
 sesame.mock("getData", "POST", (req) => {
-    console.log(req);
-
-    return {
+    return sesame.toJson({
         cacaca: {
             $type: "number",
             range: [0, 100]
-        },
+        },         
         haha: "hahha"
-    };
+    });
 });

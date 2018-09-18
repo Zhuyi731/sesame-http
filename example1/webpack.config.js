@@ -1,4 +1,4 @@
-const htmlWebpackPlugin = require("html-webpack-plugin");
+const copyWebpackPlugin = require("copy-webpack-plugin");
 const path = require("path");
 const sesame = require("../index");
 
@@ -20,11 +20,9 @@ module.exports = {
         filename: "[name].js"
     },
     plugins: [
-        new htmlWebpackPlugin({
-            template: path.join(__dirname, "src/index.html"),
-            filename: "index.html",
-            chunks: ["index"],
-            inject: "body"
+        new copyWebpackPlugin({
+            from: "./src/index.html",
+            to: "./dist/index.html"
         })
     ]
 }

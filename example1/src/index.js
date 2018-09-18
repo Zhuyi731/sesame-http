@@ -2,6 +2,8 @@ document.getElementById("send-btn").onclick = function() {
     getData("/getData", function() {});
 };
 
+getData("/getOtherData");
+
 function getData(url, callback) {
     var xhr;
     if (window.XMLHttpRequest) {
@@ -19,7 +21,6 @@ function getData(url, callback) {
     };
 
     xhr.open("POST", url, true);
-    xhr.send();
-
-
+    xhr.setRequestHeader("Content-Type", "application/x-www-form-urlencoded");
+    xhr.send("username=123");
 }
