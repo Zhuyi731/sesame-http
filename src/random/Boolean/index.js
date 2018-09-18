@@ -5,7 +5,7 @@ class BooleanRandomGenerator extends RandomGenerator {
         super();
         this.defaultOptions = {
             truePercent: 50
-        }
+        };
         this.options = {
             truePercent: 50
         };

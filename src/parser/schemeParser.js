@@ -1,6 +1,7 @@
 const fs = require("fs");
 const path = require("path");
 const Random = require("../random/Random");
+const util = require("../utils");
 
 class Parser {
     constructor() {
@@ -8,7 +9,7 @@ class Parser {
             httpRootPath: null
         };
         this.Random = Random;
-
+        this.ignoreProps = ["$before", "$response"];
     }
 
     setConfig(opt) {
@@ -38,7 +39,7 @@ class Parser {
 
                     try {
                         ret.data = require(`${filePath}.json`);
-                        this._clearCache(`${filePath}.json`);
+                        util.clearCache(`${filePath}.json`);
                     } catch (e) {
                         console.log(e);
                         throw e;
@@ -68,7 +69,7 @@ class Parser {
                         //所以需要再引入后，手动删除引入的文件的缓存，并递归的删除引入
                         config = require(filePath);
                         //清除缓存
-                        this._clearCache(filePath);
+                        util.clearCache(filePath);
                         //解析数据
                         ret.data = this._jsParser(config, req, res);
                     } catch (e) {
@@ -112,15 +113,19 @@ class Parser {
             }
         } else {
             //深赋值一份，避免funcion类型的数据被覆盖
-            let copyData = this._deepClone(config);
+            let copyData = util.deepClone(config);
             //获取解析后的数据
             copyData = this._parseProp(copyData);
             return copyData;
         }
     }
 
-    _toJsonScheme(json) {
-        let copyJson = this._deepClone(json);
+    /**
+     * 只解析数据，不管$before和$response
+     * @param {*需要解析的json数据} json 
+     */
+    _toJson(json) {
+        let copyJson = util.deepClone(json);
         //获取解析后的数据
         copyJson = this._parseProp(copyJson);
         return copyJson;
@@ -145,7 +150,7 @@ class Parser {
                         let p;
                         ret = {};
                         for (p in curProp) {
-                            ret[p] = this._parseProp(curProp[p]);
+                            this.ignoreProps.indexOf(p) == -1 && (ret[p] = this._parseProp(curProp[p]));
                         }
                     }
                 }
@@ -173,60 +178,9 @@ class Parser {
 
         return curProp;
     }
-
-
-    /**
-     * 删除引用模块路径的缓存，使得第二次引用时仍能够得到最新的数据
-     * @param {*引用模块路径} modulePath 
-     */
-    _clearCache(modulePath) {
-        let mod = require.resolve(modulePath);
-
-        if (!!mod && require.cache[mod]) {
-            require.cache[mod].children.forEach(child => {
-                this._clearRequireCache(child);
-            }, this);
-            delete require.cache[mod];
-        }
-    }
-
-    _deepClone(data, cloneFunction) {
-        let copy = {};
-        for (let prop in data) {
-            let type = typeof data[prop],
-                item = data[prop];
-            switch (type) {
-                case "object":
-                    {
-                        if (Object.prototype.toString.call(item) == "[object Array]") {
-                            copy[prop] = item.map(e => this._deepClone(e, cloneFunction));
-                        } else {
-                            copy[prop] = this._deepClone(item, cloneFunction);
-                        }
-                    }
-                    break;
-                case "function":
-                    {
-                        if (!!cloneFunction && item.constructor) {
-                            copy[prop] = new item.constructor();
-                        } else {
-                            copy[prop] = item;
-                        }
-                    }
-                    break;
-                default:
-                    {
-                        copy[prop] = item;
-                    }
-            }
-        }
-        return copy;
-    }
-
 }
 const parser = new Parser();
 module.exports = parser;
-
 
 
 

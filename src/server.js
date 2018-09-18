@@ -7,7 +7,8 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require("body-parser");
 const child_process = require("child_process");
 const schemeParser = require("./parser/schemeParser");
-
+const chokidar = require("chokidar");
+const util = require("../src/utils");
 
 class Sesame {
     constructor() {
@@ -19,6 +20,9 @@ class Sesame {
 
         //探测到sesame.rule.js之后 存储其对应的规则
         this.requestRules = {};
+        //储存对应规则的所有依赖
+        this.ruleRequires = [];
+
 
         //sesame-http运行的环境 local || webpack 默认local 
         this.env = "local";
@@ -27,7 +31,7 @@ class Sesame {
             engineTemplate: "html",
             port: 8080, //http服务器监听的端口
             debug: true, //是否输出debug信息
-            rulePath: "",
+            rulePath: null,
             httpRootPath: null //服务器监听的路径
         };
 
@@ -62,10 +66,6 @@ class Sesame {
             url = `/${url}`;
         }
 
-        if (this.requestRules[url] && this.requestRules[url].method != method) {
-            throw new Error(`rule ${url} defined already`);
-        }
-
         this.requestRules[url] = {
             method,
             callback
@@ -77,21 +77,23 @@ class Sesame {
         this.env = "local";
         this.config.httpRootPath = httpRootPath;
         this.config.port = port;
+        this.config.rulePath = this.config.rulePath || path.join(this.config.httpRootPath, "sesame.rule.js");
+
+        //将web_ui设置为静态资源目录
+        // this.app.use(express.static(path.join(__)));
+        this.app.use(express.static(this.config.httpRootPath));
 
         //设置解析引擎为config中的模板
         this.app.set("views", this.config.httpRootPath);
         this.app.set("view engine", this.config.engineTemplate);
-
+        this._loadRequestRules();
         //使用中间件来解析cookie等东西
         this._useMiddleware();
         //寻找请求规则,拦截请求
         this._interceptRequest();
 
-        //将web_ui设置为静态资源目录
-        this.app.use(express.static(this.config.httpRootPath));
-
         this.server = this.app.listen(~~port, () => {
-            let host = this.server.address().address,
+            let host = this.server.address().address == "::" ? "localhost" : this.server.address().address,
                 port = this.server.address().port;
 
             console.log('Sesame http server is listening at http://%s:%s', host, port);
@@ -101,13 +103,12 @@ class Sesame {
         schemeParser.setConfig({ httpRootPath });
     }
 
-
     /**
      * 将数据格式转换成json
      * @param {*} json 
      */
-    toJsonScheme(json) {
-        return schemeParser._toJsonScheme(json);
+    toJson(json) {
+        return schemeParser._toJson(json);
     }
 
     /**
@@ -118,9 +119,10 @@ class Sesame {
         this.env = "webpack";
         this.app = app;
         rulePath && (this.config.rulePath = rulePath);
+        this.config.rulePath = this.config.rulePath || path.join(this.config.httpRootPath, "sesame.rule.js");
 
         this.webpackBefore(app);
-        this._getRules();
+        this._loadRequestRules();
 
         // schemeParser.setConfig({});
 
@@ -137,32 +139,19 @@ class Sesame {
         //If you want change some behaviors of app.You can override this method
     }
 
-    _getRules() {
-        let rulePath;
-        if (this.env == "local") {
-            rulePath = this.config.rulePath || path.join(this.httpRootPath, "sesame.rule.js");
-            if (fs.existsSync(rulePath)) {
-                require(rulePath);
-            } else {
-                console.info("");
-                console.info("");
-                console.info("If you are using file rule case.You can ignore the information blow");
-                console.info(`cannot resolve sesame.rule.js at ${rulePath}`);
-                console.info("");
-                console.info("");
-            }
+    _loadRequestRules() {
+        this.requestRules = {};
+        if (fs.existsSync(this.config.rulePath)) {
+            require(this.config.rulePath);
+            this.ruleRequires = util.resolveAllRequires(this.config.rulePath);
+            this._watchRuleRequires();
         } else {
-            rulePath = this.config.rulePath || path.join(this.httpRootPath, "sesame.rule.js");
-            if (fs.existsSync(rulePath)) {
-                require(rulePath);
-            } else {
-                console.info("");
-                console.info("");
-                console.info("If you are using file rule case.You can ignore the information blow");
-                console.info(`cannot resolve at ${rulePath}`);
-                console.info("");
-                console.info("");
-            }
+            console.info("");
+            console.info("");
+            console.info("If you are using file rule case.You can ignore the information blow");
+            console.info(`cannot resolve at ${this.config.rulePath}`);
+            console.info("");
+            console.info("");
         }
     }
 
@@ -190,15 +179,17 @@ class Sesame {
      * 拦截请求，并返回对应的解析后的数据
      */
     _interceptRequest() {
+        let that = this;
         this.app.use((req, res, next) => {
             //先让webpack的中间件以及自定义的中间件先执行
             next();
 
             //执行完之后再冒泡到这里，如果到这里了就说明之前的所有请求都是没有被匹配的
             this._debug(`匹配到请求 ${req.originalUrl}`);
-            console.log(this.requestRules);
+
             if (req.originalUrl in this.requestRules) {
-                this._parseRuleResult(this.requestRules[req.originalUrl]);
+                let data = this._returnData(req.originalUrl, req);
+                res.json(data);
             } else {
 
                 try {
@@ -207,7 +198,6 @@ class Sesame {
                         parsedData = "";
 
                     if (dataType == "not defined") {
-                        // console.log(res);
                         console.log(`[${req.method}] : ${fileName}  没有找到对应的请求文件或请求规则`);
                     } else {
                         parsedData = schemeParser.parse(fileName, dataType, req, res);
@@ -230,6 +220,17 @@ class Sesame {
 
             }
         });
+    }
+
+    _returnData(url, req) {
+        if (typeof this.requestRules[url].callback == "function") {
+            return this.requestRules[url].callback(req);
+        } else {
+            if (this.requestRules[url].callback.hasOwnProperty("$before")) {
+                this.requestRules[url].callback.$before(req);
+            }
+            return this.toJson(this.requestRules[url].callback);
+        }
     }
 
     //查找请求的路径下是否有对应的数据文件  没有则返回 not defined
@@ -278,13 +279,26 @@ class Sesame {
         console.log("");
     }
 
+    /**
+     * 监听所有规则依赖的文件夹
+     */
+    _watchRuleRequires() {
+        this.watcher = chokidar.watch(this.ruleRequires);
+        this.watcher.on("change", path => {
+            //如果规则有变更，则清除缓存后重新加载
+            util.clearCache(this.config.rulePath);
+            this._loadRequestRules();
+            this._debug("数据变动，清空缓存并重新加载");
+        });
+    }
+
 }
 let sesame = new Sesame();
 global.sesame = sesame;
 
 //DEBUG:Start
 
-// sesame.open(8080, "/examples", path.join(__dirname, "../"));
+sesame.openLocal(8080, path.join(__dirname, "../example1/src"));
 
 //DEBUG:End
 

@@ -1,4 +1,3 @@
-const assert = require("assert");
 const expect = require("chai").expect;
 const booleanRandomGenerator = require("../../src/random/Boolean/index");
 
@@ -13,20 +12,26 @@ describe("Boolean random generator test", () => {
     });
 
     it("should always return false when truePercent up to 100%", () => {
-        expect(booleanRandomGenerator.random({ truePercent: 100 })).to.true;
+        expect(booleanRandomGenerator.random({ truePercent: 100 })).to.be.true;
     });
 
     it("should always return false when truePercent declined to 0%", () => {
-        expect(booleanRandomGenerator.random({ truePercent: 0 })).to.false;
+        expect(booleanRandomGenerator.random({ truePercent: 0 })).to.be.false;
     });
 
     it("should throw an error when config.truePercent is not a number", () => {
         expect(booleanRandomGenerator.random, { truePercent: true }).to.throw(TypeError);
+
         expect(booleanRandomGenerator.random, { truePercent: "" }).to.throw(TypeError);
+
         expect(booleanRandomGenerator.random, { truePercent: null }).to.throw(TypeError);
+
         expect(booleanRandomGenerator.random, { truePercent: "10" }).to.throw(TypeError);
+
         expect(booleanRandomGenerator.random, { truePercent: {} }).to.throw(TypeError);
+
         expect(booleanRandomGenerator.random, { truePercent: ["1", "2"] }).to.throw(TypeError);
+        
     });
 
 });
