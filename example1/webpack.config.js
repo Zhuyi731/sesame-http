@@ -7,7 +7,7 @@ module.exports = {
     devServer: {
         before: (app) => {
             sesame.setConfig({
-                rulePath: path.resolve("sesame.rule.js")
+                rulePath: path.join(__dirname, "./src/sesame.rule.js")
             });
             sesame.webpack(app);
         }
@@ -20,9 +20,9 @@ module.exports = {
         filename: "[name].js"
     },
     plugins: [
-        new copyWebpackPlugin({
+        new copyWebpackPlugin([{
             from: "./src/index.html",
-            to: "./dist/index.html"
-        })
+            to: "./"
+        }])
     ]
 }

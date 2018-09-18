@@ -1,9 +1,15 @@
 const numberGenerator = require("./Number/index");
 const booleanGenerator = require("./Boolean/index");
+const ipGenerator = require("./Ip/index");
+const maskGenerator = require("./Mask/index");
 
 class Random {
     constructor() {
 
+    }
+
+    extend() {
+        
     }
 
     basic() {
@@ -18,8 +24,13 @@ class Random {
         return booleanGenerator.random(options);
     }
 
+    ip(options) {
+        return ipGenerator.random(options);
+    }
+
+    mask(options) {
+        return maskGenerator.random(options);
+    }
 }
 
-const random = new Random();
-
-module.exports = random;
+module.exports = new Random();

@@ -3,9 +3,6 @@ const RandomGenerator = require("../RandomGenerator");
 class BooleanRandomGenerator extends RandomGenerator {
     constructor() {
         super();
-        this.defaultOptions = {
-            truePercent: 50
-        };
         this.options = {
             truePercent: 50
         };
@@ -13,9 +10,6 @@ class BooleanRandomGenerator extends RandomGenerator {
 
     setOptions(opt) {
         this._checkOptions(opt);
-        if (opt && !opt.truePercent) {
-            opt = this.defaultOptions;
-        }
         this._extendsOptions(opt);
     }
 

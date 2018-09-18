@@ -45,7 +45,12 @@ class Sesame {
         }
     }
 
-    //模拟数据的主要函数
+    /**
+     * 储存模拟数据对应规则
+     * @param {*请求路径} url 
+     * @param {*方法} method   get || post || pull || update || delete  
+     * @param {*匹配到请求后执行的回调} callback 
+     */
     mock(url, method, callback) {
         this._debug(`find mock rule:${url}`);
         if (typeof url != "string") {
@@ -72,6 +77,11 @@ class Sesame {
         };
     }
 
+    /**
+     * 给本地开发调用的服务器接口
+     * @param {*调用端口} port 
+     * @param {*监视路径} httpRootPath 
+     */
     openLocal(port = "8080", httpRootPath) {
         this.app = express();
         this.env = "local";
@@ -104,8 +114,8 @@ class Sesame {
     }
 
     /**
-     * 将数据格式转换成json
-     * @param {*} json 
+     * 将模拟数据格式转换成json
+     * @param {*模拟数据} json 
      */
     toJson(json) {
         return schemeParser._toJson(json);
@@ -182,24 +192,19 @@ class Sesame {
         let that = this;
         this.app.use((req, res, next) => {
             //先让webpack的中间件以及自定义的中间件先执行
-            next();
 
             //执行完之后再冒泡到这里，如果到这里了就说明之前的所有请求都是没有被匹配的
             this._debug(`匹配到请求 ${req.originalUrl}`);
-
             if (req.originalUrl in this.requestRules) {
                 let data = this._returnData(req.originalUrl, req);
                 res.json(data);
             } else {
-
                 try {
                     let fileName = req.originalUrl.split("?")[0],
                         dataType = this._findDataType(fileName),
                         parsedData = "";
 
-                    if (dataType == "not defined") {
-                        console.log(`[${req.method}] : ${fileName}  没有找到对应的请求文件或请求规则`);
-                    } else {
+                    if (dataType != "not defined") {
                         parsedData = schemeParser.parse(fileName, dataType, req, res);
                     }
 
@@ -219,6 +224,7 @@ class Sesame {
                 }
 
             }
+            next();
         });
     }
 
@@ -284,6 +290,7 @@ class Sesame {
      */
     _watchRuleRequires() {
         this.watcher = chokidar.watch(this.ruleRequires);
+        console.log(this.ruleRequires);
         this.watcher.on("change", path => {
             //如果规则有变更，则清除缓存后重新加载
             util.clearCache(this.config.rulePath);
@@ -298,7 +305,7 @@ global.sesame = sesame;
 
 //DEBUG:Start
 
-sesame.openLocal(8080, path.join(__dirname, "../example1/src"));
+// sesame.openLocal(8080, path.join(__dirname, "../example1/src"));
 
 //DEBUG:End
 

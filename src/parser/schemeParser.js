@@ -27,10 +27,7 @@ class Parser {
                 data: ""
             };
         filePath = path.join(this.options.cwd, this.options.where, filePath);
-        /**
-         * dataType all posibilities
-         * json | folder json | html | folder html | js
-         */
+     
         switch (dataType) {
             case "json":
             case "folder json":
@@ -134,9 +131,9 @@ class Parser {
     //递归获取prop
     _parseProp(curProp) {
         let ret;
-        switch (Object.prototype.toString.call(curProp)) {
+        switch (util.getObjType(curProp)) {
             //如果是function 则传入request参数并采用function返回的结果
-            case "[object Function]":
+            case "function":
                 {
                     ret = curProp();
                 }
@@ -144,7 +141,10 @@ class Parser {
                 //如果是对象类型的话，需要判断一下对象是否有$type属性 ，如果有$type属性则说明该对象是需要随机生成的
             case "[object Object]":
                 {
-                    if (curProp.hasOwnProperty("$type")) {
+                    //$pool优先级高于所有
+                    if (curProp.hasOwnProperty("$pool") && curProp.$type != "array") {
+                        ret = curProp.$pool[this.Random.number({ range: [0, curProp.$pool.length - 1] })];
+                    } else if (curProp.hasOwnProperty("$type")) {
                         ret = this.Random[curProp.$type](curProp);
                     } else {
                         let p;
@@ -156,7 +156,7 @@ class Parser {
                 }
                 break;
                 //数组类型，同对象类型一样处理
-            case "[object Array]":
+            case "array":
                 {
                     ret = curProp.map(el => this._parseProp(el));
                 }
@@ -179,65 +179,5 @@ class Parser {
         return curProp;
     }
 }
-const parser = new Parser();
-module.exports = parser;
 
-
-
-/**
- * 模板语言定义 
- * //如果出现$response 则表明需要对request和response做一些处理
- *  {
-        $response:"file",
-        fileContent:"xxxxx",
-        filename:"xxx.js",
-        filePath:"xxx",
-    }
-    {
-        $response:"data",
-        $data:{
-
-        },
-        status:404
-    }
- * 
- * 
- * 
- * {
- *  "prop":"123",
- *  "prop1":123,
- *  "prop2":true,
- *  "prop3":function(req){
- *      let params = req.body;
- *      if(params.username == "admin" && params.password =="admin"){
- *            return "login ok"; 
- *      }else{
- *            return "login failed";
- *      }
- *  },
- *  "prop4":{   //随机生成1-3个 ★
- *      $type:"string",
- *      range:"1-3",
- *      template:"★"
- *  },
- *  "prop5":{//随机出现两个数字
- *   $type:"array",
- *   range:"2",
- *   tamplate :["192.168.0.1","192.168.0.3","192.168.2.2"]
- *  },
- *  "prop6":{  //如果不带$type属性，则认为是普通对象
- *      range:"1-3",
- *      tmplate:"1" 
- *  }
- * }
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- * 
- */
+module.exports = new Parser();

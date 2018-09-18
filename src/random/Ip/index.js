@@ -1,15 +1,19 @@
 const RandomGenerator = require("../RandomGenerator");
 const randomNumber = require("../Number");
 
+/**
+ * @param 
+ * range:"",分别输入ip地址四部分的范围以，隔开  @type:String
+ * 例如:range:"192.0-255.0-255.0-255"   表示192.xxx.xxx.xxx
+ * networkIp:表示是否需要生成末尾为0的ip，默认不生成  false  
+ * broadcastIp:表示是否需要生成末尾为255的ip,默认不生成  false  
+ */
 class IpRandomGenerator extends RandomGenerator {
     constructor() {
         super();
-        this.defaultOptions = {
-            range: ["0.0.0.0", "255.255.255.255"],
-            networkIp: false,
-            broadcastIp: false
+        this.options = {
+            range: "1-255.0-255.0-255.0-255"
         };
-        this.options = {};
     }
 
     setOptions(opt) {
@@ -23,37 +27,19 @@ class IpRandomGenerator extends RandomGenerator {
 
     random(opt) {
         this.setOptions(opt);
-        let startIpArr = this.options.range[0].split(".").map(el => parseInt(el)),
-            endIpArr = this.options.range[1].split(".").map(el => parseInt(el)),
-            destIp = [],
-            i,
-            allFlag = false;
+        let ipArr = this.options.range.split("."),
+            allFlag = false,
+            result = "",
+            i;
 
         for (i = 0; i < 4; i++) {
-
-            if (i == 3) {
-                if (allFlag) {
-                    destIp[i] = randomNumber.random({ range: [0 + parseInt(!this.options.networkIp), 255 - parseInt(!this.options.broadcastIp)] });
-                } else {
-                    let left = (startIpArr[i] == 0 && !this.options.networkIp) ? 1 : startIpArr[i],
-                        right = (endIpArr[i] == 255 && !this.options.broadcastIp) ? 254 : endIpArr[i];
-
-                    destIp[i] = randomNumber.random({ range: [left, right] });
-                }
-            }
-
-            if (allFlag) {
-                destIp[i] = randomNumber.random({ range: [0, 255] });
-            } else {
-                destIp[i] = randomNumber.random({ range: [startIpArr[i], endIpArr[i]] });
-                !allFlag && (allFlag = startIpArr[i] < endIpArr[i]);
-            }
+            let l, r;
+            l = ipArr[i].split("-")[0];
+            r = ipArr[i].split("-").pop();
+            result += (i == 0 ? "" : ".") + randomNumber.random({ range: [l, r] });
         }
-
-        destIp = destIp.join(".");
-
-        return destIp;
-
+        return result;
     }
-
 }
+
+module.exports = new IpRandomGenerator();

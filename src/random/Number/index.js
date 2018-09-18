@@ -28,7 +28,6 @@ class NumberRandomGenerator extends RandomGenerator {
     _checkOptions(opt) {
         let message = "";
         if (opt && !!opt.range) {
-
             if (!Array.isArray(opt.range)) {
                 message = "Number随机数range属性必须为数组";
                 throw new TypeError(message);
@@ -37,10 +36,7 @@ class NumberRandomGenerator extends RandomGenerator {
                     message = "Number随机数range属性数组长度必须为2";
                     throw new TypeError(message);
                 } else {
-                    if (Object.prototype.toString.call(opt.range[0]) != "[object Number]" || Object.prototype.toString.call(opt.range[1]) != "[object Number]") {
-                        message = "Number随机数range属性左右端点值必须为数字";
-                        throw new TypeError(message);
-                    } else if (parseInt(opt.range[0]) != opt.range[0] || parseInt(opt.range[1]) != opt.range[1]) {
+                    if (parseInt(opt.range[0]) != opt.range[0] || parseInt(opt.range[1]) != opt.range[1]) {
                         message = "Number随机数range属性左右端点值必须为整数,浮点数请使用Float随机数生成器";
                         throw new TypeError(message);
                     } else if (parseInt(opt.range[0]) > parseInt(opt.range[1])) {
