@@ -1,4 +1,4 @@
-# 本地使用 
+# 本地使用
 
 安装：
 
@@ -14,11 +14,17 @@ $ npm install sesame-http -g
 $ npm update sesame-http -g
 ```
 
-安装完毕后使用  
+安装完毕后使用如下指令查看当前版本
 
 ```
-$ sesame-http -v 
+$ sesame-http -v
 ```
 
-查看当前版本
+开发调试，在项目目录上使用命令
+
+```
+$ sesame-http open
+```
+
+
 
