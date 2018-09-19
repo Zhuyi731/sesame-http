@@ -1,0 +1,81 @@
+{
+"gitbook": "3.2.3",
+"title": "吴小龙同學",
+"description": "http://wuxiaolong.me/",
+"author": "WuXiaolong",
+"language": "zh-hans",
+"links": {
+"sidebar": {
+
+}
+},
+"plugins": ["github",
+"donate",
+"splitter",
+"anchor-navigation-ex",
+"-sharing",
+"sharing-plus",
+"-highlight",
+"prism"
+],
+"pluginsConfig": {
+"sharing": {
+"douban": false,
+"facebook": false,
+"google": false,
+"hatenaBookmark": false,
+"instapaper": false,
+"line": false,
+"linkedin": false,
+"messenger": false,
+"pocket": false,
+"qq": false,
+"qzone": false,
+"stumbleupon": false,
+"twitter": false,
+"viber": false,
+"vk": false,
+"weibo": false,
+"whatsapp": false,
+"all": [
+"weibo","qq","qzone","google","douban"
+]
+},
+"github": {
+"url": "https://github.com/WuXiaolong"
+},
+"donate": {
+"wechat": "http://7q5c2h.com1.z0.glb.clouddn.com/wechatpay.JPG",
+"title": "",
+"button": "赏",
+"wechatText": "微信打赏"
+},
+"anchor-navigation-ex": {
+"associatedWithSummary":false,
+"showLevel":true,
+"multipleH1": true,
+"mode": "float",
+
+"pageTop": {
+"showLevelIcon": false,
+"level1Icon": "fa fa-hand-o-right",
+"level2Icon": "fa fa-hand-o-right",
+"level3Icon": "fa fa-hand-o-right"
+}
+},
+"theme-default": {
+"showLevel": true
+},
+"fontsettings": {
+"theme": "white",
+"family": "serif",
+"size": 2
+},
+"prism": {
+"css": [
+"prismjs/themes/prism-tomorrow.css"
+]
+}
+}
+
+}
