@@ -8,8 +8,11 @@ class Random {
 
     }
 
-    extend() {
-        
+    extend(type, generator) {
+        this[type] = function(options) {
+            return generator.random(options);
+        };
+        console.log(`[sesame extend]：Extend ${type} success`);
     }
 
     basic() {
@@ -30,6 +33,10 @@ class Random {
 
     mask(options) {
         return maskGenerator.random(options);
+    }
+
+    random(type, options) {
+        return this[type](options);
     }
 }
 
