@@ -39,22 +39,37 @@ class RandomGenerator {
 
     //生成随机数
     random() {
-
         throw new Error("You must override this method to complete the generator");
     }
 
     roll(opt) {
         this.ctTime = 0;
         let randomResult = this.random(opt);
-        while (this.options.exclude.test(randomResult) && !this.options.include.test(randomResult)) {
-            this.ctTime++;
-
-            if (this.ctTime > 100) {
-                throw new Error(`迭代次数超过${this.ctTime}次，退出迭代`);
+        if (this.options.$exclude) {
+            while (this.options.$exclude.test(randomResult)) {
+                this.ctTime++;
+                randomResult = this.random(opt);
+                if (this.ctTime > 100) {
+                    this.ctTime = 0;
+                    console.error(`迭代次数超过${this.ctTime}次，退出迭代`);
+                    randomResult = null;
+                    break;
+                }
+            }
+        }else if(this.options.$include){
+            while (!this.options.$include.test(randomResult)) {
+                this.ctTime++;
+                randomResult = this.random(opt);
+                if (this.ctTime > 100) {
+                    this.ctTime = 0;
+                    console.error(`迭代次数超过${this.ctTime}次，退出迭代`);
+                    randomResult = null;
+                    break;
+                }
             }
         }
+        return randomResult;
     }
-
 }
 
 module.exports = RandomGenerator;

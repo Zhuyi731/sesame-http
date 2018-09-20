@@ -22,21 +22,23 @@ class Parser {
 
     parse(filePath, dataType, req, res) {
         let data,
-            ret = {
-                type: "json",
-                data: ""
-            };
-        filePath = path.join(this.options.cwd, this.options.where, filePath);
-     
+            ret;
+        filePath = path.join(this.options.httpRootPath, filePath);
+
         switch (dataType) {
             case "json":
             case "folder json":
                 {
-                    dataType == "folder json" && (filePath += "\index");
-
+                    if (dataType == "folder json") {
+                        filePath = path.join(filePath, "index.json");
+                    }else{
+                        filePath = `${filePath}.${dataType}`;
+                    }
+                    console.log(filePath);
                     try {
-                        ret.data = require(`${filePath}.json`);
-                        util.clearCache(`${filePath}.json`);
+                        ret = util.deepClone(require(filePath));
+                        console.log(ret);
+                        // util.clearCache(filePath);
                     } catch (e) {
                         console.log(e);
                         throw e;
@@ -48,10 +50,15 @@ class Parser {
             case "folder html":
                 {
                     let htmlContent;
-                    dataType == "folder html" && (filePath = path.join(filePath, "index.html"));
+                    if (dataType == "folder html") {
+                        filePath = path.join(filePath, "index.html");
+                    }else{
+                        filePath = `${filePath}.${dataType}`;
+                    }
+
                     try {
                         htmlContent = fs.readFileSync(filePath, "utf-8");
-                        ret.data = htmlContent;
+                        ret = JSON.parse(htmlContent);
                     } catch (e) {
                         console.log(e);
                         throw e;
@@ -68,7 +75,7 @@ class Parser {
                         //清除缓存
                         util.clearCache(filePath);
                         //解析数据
-                        ret.data = this._jsParser(config, req, res);
+                        ret = this._jsParser(config, req, res);
                     } catch (e) {
                         console.log(e);
                         throw e;
@@ -139,7 +146,7 @@ class Parser {
                 }
                 break;
                 //如果是对象类型的话，需要判断一下对象是否有$type属性 ，如果有$type属性则说明该对象是需要随机生成的
-            case "[object Object]":
+            case "object":
                 {
                     //$pool优先级高于所有
                     if (curProp.hasOwnProperty("$pool") && curProp.$type != "array") {

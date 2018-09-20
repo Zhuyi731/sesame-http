@@ -58,5 +58,7 @@ function getObjType(obj) {
             }
             break;
     }
-
+    return result;
 }
+
+module.exports = getObjType;

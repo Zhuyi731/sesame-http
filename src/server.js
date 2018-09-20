@@ -9,6 +9,8 @@ const child_process = require("child_process");
 const schemeParser = require("./parser/schemeParser");
 const chokidar = require("chokidar");
 const util = require("../src/utils");
+const RandomGenerator = require("./random/RandomGenerator");
+const random = require("./random/Random");
 
 class Sesame {
     constructor() {
@@ -35,6 +37,8 @@ class Sesame {
             httpRootPath: null //服务器监听的路径
         };
 
+        this.random = random;
+        this.RandomGenerator = RandomGenerator;
     }
 
     setConfig(cfg) {
@@ -102,12 +106,19 @@ class Sesame {
         //寻找请求规则,拦截请求
         this._interceptRequest();
 
-        this.server = this.app.listen(~~port, () => {
+        this.server = this.app.listen(~~port, (err) => {
             let host = this.server.address().address == "::" ? "localhost" : this.server.address().address,
                 port = this.server.address().port;
 
             console.log('Sesame http server is listening at http://%s:%s', host, port);
             child_process.exec(`open http://${host}:${port}`);
+        });
+
+        this.server.on('error', function(err) {
+            if (err.code === 'EADDRINUSE') { // 端口已经被使用
+                console.log(`端口${port}已经被占用，请使用-p配置其他端口使用`);
+                process.exit(0);
+            }
         });
 
         schemeParser.setConfig({ httpRootPath });
@@ -134,7 +145,7 @@ class Sesame {
         this.webpackBefore(app);
         this._loadRequestRules();
 
-        // schemeParser.setConfig({});
+        schemeParser.setConfig({ httpRootPath: this.config.httpRootPath });
 
         this._useMiddleware();
         this._interceptRequest();
@@ -145,7 +156,7 @@ class Sesame {
      * 可以在中间添加自己的中间件以及路由
      * @param {*} app 
      */
-    webpackBefore(app) {
+    before() {
         //If you want change some behaviors of app.You can override this method
     }
 
@@ -191,13 +202,14 @@ class Sesame {
     _interceptRequest() {
         let that = this;
         this.app.use((req, res, next) => {
-            //先让webpack的中间件以及自定义的中间件先执行
+            next();
 
             //执行完之后再冒泡到这里，如果到这里了就说明之前的所有请求都是没有被匹配的
             this._debug(`匹配到请求 ${req.originalUrl}`);
-            if (req.originalUrl in this.requestRules) {
-                let data = this._returnData(req.originalUrl, req);
-                res.json(data);
+
+            //当请求url匹配到规则并且请求方式一样时
+            if (req.originalUrl in this.requestRules && req.method.toLowerCase() == this.requestRules[req.originalUrl].method) {
+                this._dealRules(req.originalUrl, req, res);
             } else {
                 try {
                     let fileName = req.originalUrl.split("?")[0],
@@ -208,41 +220,76 @@ class Sesame {
                         parsedData = schemeParser.parse(fileName, dataType, req, res);
                     }
 
-                    if (parsedData) {
-                        //TODO:支持文件返回
-                        if (parsedData.type == "file") {
-                            res.sendFile("xxx");
-                        }
-
-                        if (parsedData.type == "json") {
-                            res.json(parsedData.data);
-                        }
-                    }
+                    res.json(parsedData);
+                    console.log(parsedData);
                 } catch (e) {
                     console.log(e);
                     throw e;
                 }
 
             }
-            next();
         });
     }
 
-    _returnData(url, req) {
-        if (typeof this.requestRules[url].callback == "function") {
-            return this.requestRules[url].callback(req);
+    _dealRules(url, req, res) {
+        let data,
+            status = 200,
+            rule = this.requestRules[url].callback,
+            delay = 0;
+
+        if (util.getObjType(rule) == "function") {
+            data = rule(req);
         } else {
-            if (this.requestRules[url].callback.hasOwnProperty("$before")) {
-                this.requestRules[url].callback.$before(req);
+            //before
+            if (rule.hasOwnProperty("$before")) {
+                rule.$before(req);
             }
-            return this.toJson(this.requestRules[url].callback);
+            //检查是否有status，有的话则覆盖status
+            if (rule.hasOwnProperty("$status")) {
+                if (util.getObjType(rule.$status) != "number") {
+                    throw new Error(`$status:${rule.$status} is not a number`);
+                } else {
+                    status = rule.$status;
+                }
+            }
+
+            if (rule.hasOwnProperty("$delay")) {
+                if (util.getObjType(rule.$delay) != "number") {
+                    throw new Error(`$delay:${rule.$delay} is not a number`);
+                }
+                delay = rule.$delay;
+            }
+
+            if (rule.hasOwnProperty("$response")) {
+                switch (rule.$response) {
+                    case "file":
+                        {
+                            if (!rule.hasOwnProperty("$filePath")) {
+                                throw new Error(`[Rule Error]: rule ${url} find $response:file without $filePath`);
+                            }
+                            if (!fs.existsSync(rule.$filePath)) {
+                                throw new Error(`[Rule Error]: ${rule.$filePath} does not extists`);
+                            }
+                            res.status(status).sendFile(rule.filePath);
+                            return;
+                        }
+                        break;
+                }
+            }
+            data = this.toJson(rule);
         }
+
+        setTimeout(function() {
+            res.status(status);
+            res.json(data);
+        }, delay);
+
+
     }
 
     //查找请求的路径下是否有对应的数据文件  没有则返回 not defined
     _findDataType(fileName) {
-        if (!fileName || !this.httpRootPath) return "not defined";
-        this._debug(fileName);
+        if (!fileName || !this.config.httpRootPath) return "not defined";
         let prefix = path.join(this.config.httpRootPath, fileName);
 
         //如果请求路径是文件夹,则检查文件夹下是否有index.*类型文件，有则使用下面的文件作为数据源
@@ -290,7 +337,6 @@ class Sesame {
      */
     _watchRuleRequires() {
         this.watcher = chokidar.watch(this.ruleRequires);
-        console.log(this.ruleRequires);
         this.watcher.on("change", path => {
             //如果规则有变更，则清除缓存后重新加载
             util.clearCache(this.config.rulePath);

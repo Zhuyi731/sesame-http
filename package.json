@@ -1,6 +1,6 @@
 {
   "name": "sesame-http",
-  "version": "0.0.1-beta",
+  "version": "0.0.7-beta",
   "description": "A mini http server that analog datas.",
   "main": "index.js",
   "scripts": {
@@ -12,12 +12,14 @@
   "dependencies": {
     "body-parser": "^1.18.3",
     "chokidar": "^2.0.4",
+    "commander": "^2.18.0",
     "cookie-parser": "^1.4.3",
     "express": "^4.16.3",
+    "inquirer": "^6.2.0",
     "morgan": "^1.9.0"
   },
   "bin": {
-    "open-sesame": "./bin/openSesame"
+    "sesame-http": "./bin/openSesame"
   },
   "devDependencies": {
     "chai": "^4.1.2",

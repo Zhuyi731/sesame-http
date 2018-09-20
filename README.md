@@ -28,5 +28,5 @@ Inspired by [Mock.js](http://mockjs.com/)
 
 
 #文档  
-TODO：  
-V1.0版本推出  
+
+进入这里查看[sesame-http文档](https://sesame-http.github.io)

@@ -41,11 +41,11 @@ class IpRandomGenerator extends RandomGenerator {
 
     checkOptions(opt) {
 
-        if (util.getObjType(opt) != "string") {
+        if (util.getObjType(opt.range) != "string") {
             throw new TypeError("[ip generator]:range must be string");
         }
 
-        let arrs = opt.split(".");
+        let arrs = opt.range.split(".");
 
         if (arrs.length != 4) {
             throw new Error("[ip generator]:range must be formated like xxx-xxx.xxx-xxx.xxx-xxx.xxx-xxx");

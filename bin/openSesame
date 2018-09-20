@@ -13,7 +13,9 @@ program.version(require('../package').version)
     .option("-w,--where", "set the path you want to listen")
     .parse(process.argv);
 
-sesame.openLocal(program.port, path.join(process.cwd(), (program.where || "./")));
+    let where = program.where || "./";
+
+sesame.openLocal(program.port, path.join(process.cwd(), where));
 
 function HelloSesame() {
     console.log("");
