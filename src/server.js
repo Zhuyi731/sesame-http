@@ -94,15 +94,16 @@ class Sesame {
         this.config.rulePath = this.config.rulePath || path.join(this.config.httpRootPath, "sesame.rule.js");
 
         //将web_ui设置为静态资源目录
-        // this.app.use(express.static(path.join(__)));
         this.app.use(express.static(this.config.httpRootPath));
 
         //设置解析引擎为config中的模板
         this.app.set("views", this.config.httpRootPath);
         this.app.set("view engine", this.config.engineTemplate);
         this._loadRequestRules();
+
         //使用中间件来解析cookie等东西
         this._useMiddleware();
+
         //寻找请求规则,拦截请求
         this._interceptRequest();
 
@@ -202,31 +203,30 @@ class Sesame {
     _interceptRequest() {
         let that = this;
         this.app.use((req, res, next) => {
-            next();
-
+            this._filterUrl(req);
             //执行完之后再冒泡到这里，如果到这里了就说明之前的所有请求都是没有被匹配的
             this._debug(`匹配到请求 ${req.originalUrl}`);
 
             //当请求url匹配到规则并且请求方式一样时
             if (req.originalUrl in this.requestRules && req.method.toLowerCase() == this.requestRules[req.originalUrl].method) {
+                console.log(`[Rule Type]:${req.originalUrl}`);
                 this._dealRules(req.originalUrl, req, res);
             } else {
                 try {
-                    let fileName = req.originalUrl.split("?")[0],
+                    let fileName = req.originalUrl,
                         dataType = this._findDataType(fileName),
                         parsedData = "";
 
+                    console.log(`[File Type]: ${req.originalUrl}  `);
                     if (dataType != "not defined") {
                         parsedData = schemeParser.parse(fileName, dataType, req, res);
                     }
-
-                    res.json(parsedData);
-                    console.log(parsedData);
+                    parsedData = JSON.stringify(parsedData);
+                    res.send(parsedData);
                 } catch (e) {
                     console.log(e);
                     throw e;
                 }
-
             }
         });
     }
@@ -264,13 +264,41 @@ class Sesame {
                 switch (rule.$response) {
                     case "file":
                         {
+                            let filePath,
+                                fileName = null;
                             if (!rule.hasOwnProperty("$filePath")) {
                                 throw new Error(`[Rule Error]: rule ${url} find $response:file without $filePath`);
                             }
+
+                            if (!rule.hasOwnProperty("$fileName")) {
+                                throw new Error(`[Rule Error]: rule ${url} find $response:file without $fileName`);
+                            }
+
+                            if (util.getObjType(rule.$filePath) !== "function" && util.getObjType(rule.$filePath) !== "string") {
+                                throw new TypeError(`[Rule Error]: $filePath should be a function or a string`);
+                            }
+
+                            if (util.getObjType(rule.$fileName) !== "function" && util.getObjType(rule.$fileName) !== "string") {
+                                throw new TypeError(`[Rule Error]: $fileName should be a function or a string`);
+                            }
+
                             if (!fs.existsSync(rule.$filePath)) {
                                 throw new Error(`[Rule Error]: ${rule.$filePath} does not extists`);
                             }
-                            res.status(status).sendFile(rule.filePath);
+
+                            if (util.getObjType(rule.$filePath) == "function") {
+                                filePath = rule.$filePath();
+                            } else {
+                                filePath = rule.$filePath;
+                            }
+
+                            if (util.getObjType(rule.$fileName) == "function") {
+                                fileName = rule.$fileName();
+                            } else {
+                                fileName = rule.$fileName;
+                            }
+
+                            res.download(filePath, fileName);
                             return;
                         }
                         break;
@@ -281,9 +309,8 @@ class Sesame {
 
         setTimeout(function() {
             res.status(status);
-            res.json(data);
+            res.send(JSON.stringify(data));
         }, delay);
-
 
     }
 
@@ -332,6 +359,17 @@ class Sesame {
         console.log("");
     }
 
+    _filterUrl(req) {
+        if (req.originalUrl && /\?/.test(req.originalUrl)) {
+            req.originalUrl = req.originalUrl.split("?")[0];
+        }
+
+        if (req.originalUrl[req.originalUrl.length - 1] == "/") {
+            req.originalUrl = req.originalUrl.substr(0, req.originalUrl.length - 1);
+        }
+
+    }
+
     /**
      * 监听所有规则依赖的文件夹
      */
@@ -351,7 +389,7 @@ global.sesame = sesame;
 
 //DEBUG:Start
 
-// sesame.openLocal(8080, path.join(__dirname, "../example1/src"));
+// sesame.openLocal(8080, path.join(__dirname, "../demo/demo3"));
 
 //DEBUG:End
 

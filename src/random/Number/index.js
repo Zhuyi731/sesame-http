@@ -52,7 +52,7 @@ class NumberRandomGenerator extends RandomGenerator {
 
     random(opt) {
         this.setOptions(opt);
-        let randomRegionWidth = this.options.range[1] - this.options.range[0],
+        let randomRegionWidth = this.options.range[1] - this.options.range[0] + 1,
             offset = parseInt(Math.random() * randomRegionWidth),
             randomNumber = this.options.range[0] + offset;
 

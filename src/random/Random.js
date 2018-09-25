@@ -2,6 +2,7 @@ const numberGenerator = require("./Number/index");
 const booleanGenerator = require("./Boolean/index");
 const ipGenerator = require("./Ip/index");
 const maskGenerator = require("./Mask/index");
+const arrayGenerator = require("./Array");
 
 class Random {
     constructor() {
@@ -33,6 +34,10 @@ class Random {
 
     mask(options) {
         return maskGenerator.random(options);
+    }
+
+    array(options, context) {
+        return arrayGenerator.random(options, context);
     }
 
     random(type, options) {

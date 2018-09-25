@@ -8,13 +8,13 @@ const util = require("../../utils");
  * networkIp:表示是否需要生成末尾为0的ip，默认不生成  false  
  * broadcastIp:表示是否需要生成末尾为255的ip,默认不生成  false  
  */
-class IpRandomGenerator extends RandomGenerator {
+class ArrayRandomGenerator extends RandomGenerator {
     constructor() {
         super();
         this.options = {
             length: [0, 10],
             generator: {},
-            $pool: []
+            $pool: null
         };
     }
 
@@ -36,7 +36,7 @@ class IpRandomGenerator extends RandomGenerator {
             throw new RangeError("[Array Generator]: The left value must be less than the right value");
         }
 
-        if (!opt.generator || !opt.$pool) {
+        if (!opt.generator && !opt.$pool) {
             throw new Error("[Array Generator]:generator or $pool must be configed");
         }
 
@@ -45,23 +45,27 @@ class IpRandomGenerator extends RandomGenerator {
         }
     }
 
-    random(opt) {
+    random(opt, context) {
+        this.setOptions(opt);
         let result = [],
-            length = randomNumber({ range: this.options.length });
+            length = randomNumber.random({ range: this.options.length });
 
         if (this.options.$pool) {
             let poolLength = this.options.$pool.length,
                 picked;
+
             while (length--) {
-                picked = randomNumber({ range: [0, poolLength - 1] });
+                picked = randomNumber.random({ range: [0, poolLength - 1] });
                 result.push(this.options.$pool[picked]);
             }
+
         } else {
             while (length--) {
-                result.push(this.options.generator());
+                result.push(this.options.generator.call(context));
             }
         }
+        return result;
     }
 }
 
-module.exports = new IpRandomGenerator();
+module.exports = new ArrayRandomGenerator();

@@ -9,7 +9,6 @@ class Parser {
             httpRootPath: null
         };
         this.Random = Random;
-        this.ignoreProps = ["$before", "$response"];
     }
 
     setConfig(opt) {
@@ -31,7 +30,7 @@ class Parser {
                 {
                     if (dataType == "folder json") {
                         filePath = path.join(filePath, "index.json");
-                    }else{
+                    } else {
                         filePath = `${filePath}.${dataType}`;
                     }
                     console.log(filePath);
@@ -52,7 +51,7 @@ class Parser {
                     let htmlContent;
                     if (dataType == "folder html") {
                         filePath = path.join(filePath, "index.html");
-                    }else{
+                    } else {
                         filePath = `${filePath}.${dataType}`;
                     }
 
@@ -60,7 +59,11 @@ class Parser {
                         htmlContent = fs.readFileSync(filePath, "utf-8");
                         ret = JSON.parse(htmlContent);
                     } catch (e) {
-                        console.log(e);
+                        if (/Unexpected token/.test(e)) {
+                            console.warn("");
+                            console.warn(`[JSON error]： @${filePath} 下的数据不是合法的JSON格式`);
+                            console.warn("");
+                        }
                         throw e;
                     }
                 }
@@ -119,7 +122,7 @@ class Parser {
             //深赋值一份，避免funcion类型的数据被覆盖
             let copyData = util.deepClone(config);
             //获取解析后的数据
-            copyData = this._parseProp(copyData);
+            copyData = this._parseProp(copyData, copyData);
             return copyData;
         }
     }
@@ -131,18 +134,18 @@ class Parser {
     _toJson(json) {
         let copyJson = util.deepClone(json);
         //获取解析后的数据
-        copyJson = this._parseProp(copyJson);
+        copyJson = this._parseProp(copyJson, copyJson);
         return copyJson;
     }
 
     //递归获取prop
-    _parseProp(curProp) {
+    _parseProp(curProp, context) {
         let ret;
         switch (util.getObjType(curProp)) {
             //如果是function 则传入request参数并采用function返回的结果
             case "function":
                 {
-                    ret = curProp();
+                    ret = curProp.call(context);
                 }
                 break;
                 //如果是对象类型的话，需要判断一下对象是否有$type属性 ，如果有$type属性则说明该对象是需要随机生成的
@@ -152,12 +155,14 @@ class Parser {
                     if (curProp.hasOwnProperty("$pool") && curProp.$type != "array") {
                         ret = curProp.$pool[this.Random.number({ range: [0, curProp.$pool.length - 1] })];
                     } else if (curProp.hasOwnProperty("$type")) {
-                        ret = this.Random[curProp.$type](curProp);
+                        ret = this.Random[curProp.$type](curProp, context);
                     } else {
                         let p;
                         ret = {};
                         for (p in curProp) {
-                            this.ignoreProps.indexOf(p) == -1 && (ret[p] = this._parseProp(curProp[p]));
+                            if (!/\$/.test(p)) {
+                                ret[p] = this._parseProp(curProp[p], context);
+                            }
                         }
                     }
                 }
@@ -165,7 +170,7 @@ class Parser {
                 //数组类型，同对象类型一样处理
             case "array":
                 {
-                    ret = curProp.map(el => this._parseProp(el));
+                    ret = curProp.map(el => this._parseProp(el, context));
                 }
                 break;
                 //基础数据直接返回
