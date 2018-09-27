@@ -14,9 +14,7 @@ describe("Number random generator test", () => {
 
     it("should return a number between 1 to 100,when no range option passed in", () => {
         expect(numberRandomGenerator.random()).to.within(0, 100);
-        expect(numberRandomGenerator.random({ range: "" })).to.within(0, 100);
-        expect(numberRandomGenerator.random({ range: null })).to.within(0, 100);
-    });
+      });
 
     it("should return a number between range", () => {
         expect(numberRandomGenerator.random({ range: [-21, -9] })).to.within(-21, -9);
@@ -48,40 +46,44 @@ describe("Number random generator test", () => {
     it("should throw an error when config.range is invalid", () => {
 
         expect(() => {
-            numberRandomGenerator.random({ range: {} })
+            numberRandomGenerator.random({ range: {} });
         }).to.throw(TypeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: [] })
+            numberRandomGenerator.random({ range: [] });
         }).to.throw(TypeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: "10" })
+            numberRandomGenerator.random({ range: "10" });
         }).to.throw(TypeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: {} })
+            numberRandomGenerator.random({ range: {} });
         }).to.throw(TypeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: ["1"] })
+            numberRandomGenerator.random({ range: ["1"] });
         }).to.throw(TypeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: ["1", "2", "3"] })
+            numberRandomGenerator.random({ range: ["1", "2", "3"] });
         }).to.throw(TypeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: [20.11, 20.69] })
-        }).to.throw(TypeError);
-
-        expect(() => {
-            numberRandomGenerator.random({ range: [-1, -20] })
+            numberRandomGenerator.random({ range: [-1, -20] });
         }).to.throw(RangeError);
 
         expect(() => {
-            numberRandomGenerator.random({ range: [200, 12] })
+            numberRandomGenerator.random({ range: [200, 12] });
         }).to.throw(RangeError);
+  
+        expect(() => {
+            numberRandomGenerator.random({ range:"" });
+        }).to.throw(TypeError);
+  
+        expect(() => {
+            numberRandomGenerator.random({ range:null });
+        }).to.throw(TypeError);
 
     });
 

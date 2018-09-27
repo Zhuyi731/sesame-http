@@ -12,11 +12,15 @@ function deepClone(data, cloneFunction) {
             {
                 if (Object.prototype.toString.call(item) == "[object Array]") {
                     copy = item.map(e => deepClone(e, cloneFunction));
-                } else {
+                } else if (Object.prototype.toString.call(item) == "[object Null]") {
+                    copy = null;
+                } else if (Object.prototype.toString.call(item) == "[object Object]") {
                     copy = {};
                     for (let prop in data) {
                         copy[prop] = deepClone(item[prop], cloneFunction);
                     }
+                } else {
+                    copy = item;
                 }
             }
             break;

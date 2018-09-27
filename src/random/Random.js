@@ -1,7 +1,9 @@
 const numberGenerator = require("./Number/index");
+const stringGenerator = require("./String");
 const booleanGenerator = require("./Boolean/index");
 const ipGenerator = require("./Ip/index");
 const maskGenerator = require("./Mask/index");
+const macGenerator = require("./Mac");
 const arrayGenerator = require("./Array");
 
 class Random {
@@ -24,6 +26,10 @@ class Random {
         return numberGenerator.random(options);
     }
 
+    string(options){
+        return stringGenerator.random(options);
+    }
+
     boolean(options) {
         return booleanGenerator.random(options);
     }
@@ -34,6 +40,10 @@ class Random {
 
     mask(options) {
         return maskGenerator.random(options);
+    }
+
+    mac(options){
+        return macGenerator.random(options);
     }
 
     array(options, context) {

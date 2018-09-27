@@ -8,15 +8,14 @@ const randomNumber = require("../Number");
 class IpRandomGenerator extends RandomGenerator {
     constructor() {
         super();
+        this.defaultOptions = {
+            range: "1-32"
+        };
         this.options = {
             range: "1-32"
         };
     }
 
-    setOptions(opt) {
-        this.checkOptions(opt);
-        this._extendsOptions(opt);
-    }
 
     checkOptions(opt) {
         if (!Array.isArray(opt.range)) {

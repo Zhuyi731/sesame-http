@@ -1,3 +1,4 @@
+const util = require("../utils");
 class RandomGenerator {
 
     constructor() {
@@ -17,7 +18,13 @@ class RandomGenerator {
 
     //设置参数
     setOptions(options) {
-        this.options = options;
+        this.options = util.deepClone(this.defaultOptions);
+        this.checkOptions(options);
+        this._extendsOptions(options);
+    }
+
+    checkOptions() {
+
     }
 
     getOptions(options) {
@@ -26,16 +33,11 @@ class RandomGenerator {
 
     _extendsOptions(opt) {
         for (let prop in opt) {
-            if (this.options.hasOwnProperty(prop)) {
+            if (this.defaultOptions.hasOwnProperty(prop)) {
                 this.options[prop] = opt[prop];
             }
         }
     }
-
-    checkOptions(options) {
-
-    }
-
 
     //生成随机数
     random() {
@@ -56,7 +58,7 @@ class RandomGenerator {
                     break;
                 }
             }
-        }else if(this.options.$include){
+        } else if (this.options.$include) {
             while (!this.options.$include.test(randomResult)) {
                 this.ctTime++;
                 randomResult = this.random(opt);

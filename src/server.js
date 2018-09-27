@@ -34,6 +34,8 @@ class Sesame {
             port: 8080, //http服务器监听的端口
             debug: true, //是否输出debug信息
             rulePath: null,
+            disableRule: false,
+            disableFile: true,
             httpRootPath: null //服务器监听的路径
         };
 
@@ -143,7 +145,7 @@ class Sesame {
         rulePath && (this.config.rulePath = rulePath);
         this.config.rulePath = this.config.rulePath || path.join(this.config.httpRootPath, "sesame.rule.js");
 
-        this.webpackBefore(app);
+        this.before(app);
         this._loadRequestRules();
 
         schemeParser.setConfig({ httpRootPath: this.config.httpRootPath });
@@ -194,7 +196,7 @@ class Sesame {
         app.use(cookieParser());
 
         //使用morgan的日志功能
-        app.use(morgan('dev'));
+        this.config.debug && app.use(morgan('short'));
     }
 
     /**
@@ -208,7 +210,7 @@ class Sesame {
             this._debug(`匹配到请求 ${req.originalUrl}`);
 
             //当请求url匹配到规则并且请求方式一样时
-            if (req.originalUrl in this.requestRules && req.method.toLowerCase() == this.requestRules[req.originalUrl].method) {
+            if (!this.config.disableRule && req.originalUrl in this.requestRules && req.method.toLowerCase() == this.requestRules[req.originalUrl].method) {
                 console.log(`[Rule Type]:${req.originalUrl}`);
                 this._dealRules(req.originalUrl, req, res);
             } else {
@@ -217,12 +219,13 @@ class Sesame {
                         dataType = this._findDataType(fileName),
                         parsedData = "";
 
-                    console.log(`[File Type]: ${req.originalUrl}  `);
                     if (dataType != "not defined") {
                         parsedData = schemeParser.parse(fileName, dataType, req, res);
+                        parsedData = JSON.stringify(parsedData);
+                        res.send(parsedData);
+                    } else {
+                        next();
                     }
-                    parsedData = JSON.stringify(parsedData);
-                    res.send(parsedData);
                 } catch (e) {
                     console.log(e);
                     throw e;

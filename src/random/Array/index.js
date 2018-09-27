@@ -11,16 +11,12 @@ const util = require("../../utils");
 class ArrayRandomGenerator extends RandomGenerator {
     constructor() {
         super();
-        this.options = {
+        this.defaultOptions = {
             length: [0, 10],
             generator: {},
             $pool: null
         };
-    }
-
-    setOptions(opt) {
-        this.checkOptions(opt);
-        this._extendsOptions(opt);
+        this.options = {};
     }
 
     checkOptions(opt) {
@@ -49,7 +45,9 @@ class ArrayRandomGenerator extends RandomGenerator {
         this.setOptions(opt);
         let result = [],
             length = randomNumber.random({ range: this.options.length });
-
+        
+        //优先级
+        //$pool > $generator
         if (this.options.$pool) {
             let poolLength = this.options.$pool.length,
                 picked;

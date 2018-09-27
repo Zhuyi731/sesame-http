@@ -29,6 +29,9 @@ const util = require("../../utils");
 class IpRandomGenerator extends RandomGenerator {
     constructor() {
         super();
+        this.defaultOptions = {
+            range: "0-255.0-255.0-255.0-255"
+        };
         this.options = {
             range: "0-255.0-255.0-255.0-255"
         };
