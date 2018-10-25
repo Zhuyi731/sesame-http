@@ -39,7 +39,9 @@ class Sesame {
             httpRootPath: null //服务器监听的路径
         };
 
+        //对外暴露的接口
         this.random = random;
+        this.util = util;
         this.RandomGenerator = RandomGenerator;
     }
 
@@ -206,7 +208,6 @@ class Sesame {
         let that = this;
         this.app.use((req, res, next) => {
             this._filterUrl(req);
-            //执行完之后再冒泡到这里，如果到这里了就说明之前的所有请求都是没有被匹配的
             this._debug(`匹配到请求 ${req.originalUrl}`);
 
             //当请求url匹配到规则并且请求方式一样时
@@ -240,81 +241,85 @@ class Sesame {
             rule = this.requestRules[url].callback,
             delay = 0;
 
+
+        //before
+        if (rule.hasOwnProperty("$before")) {
+            rule.$before(req);
+        }
+
+        if (rule.hasOwnProperty("$response")) {
+            switch (rule.$response) {
+                case "file":
+                    {
+                        let filePath,
+                            fileName = null;
+                        if (!rule.hasOwnProperty("$filePath")) {
+                            throw new Error(`[Rule Error]: rule ${url} find $response:file without $filePath`);
+                        }
+
+                        if (!rule.hasOwnProperty("$fileName")) {
+                            throw new Error(`[Rule Error]: rule ${url} find $response:file without $fileName`);
+                        }
+
+                        if (util.getObjType(rule.$filePath) !== "function" && util.getObjType(rule.$filePath) !== "string") {
+                            throw new TypeError(`[Rule Error]: $filePath should be a function or a string`);
+                        }
+
+                        if (util.getObjType(rule.$fileName) !== "function" && util.getObjType(rule.$fileName) !== "string") {
+                            throw new TypeError(`[Rule Error]: $fileName should be a function or a string`);
+                        }
+
+                        if (!fs.existsSync(rule.$filePath)) {
+                            throw new Error(`[Rule Error]: ${rule.$filePath} does not extists`);
+                        }
+
+                        if (util.getObjType(rule.$filePath) == "function") {
+                            filePath = rule.$filePath();
+                        } else {
+                            filePath = rule.$filePath;
+                        }
+
+                        if (util.getObjType(rule.$fileName) == "function") {
+                            fileName = rule.$fileName();
+                        } else {
+                            fileName = rule.$fileName;
+                        }
+
+                        res.download(filePath, fileName);
+                        return;
+                    }
+                    break;
+            }
+        }
+
         if (util.getObjType(rule) == "function") {
             data = rule(req);
-        } else {
-            //before
-            if (rule.hasOwnProperty("$before")) {
-                rule.$before(req);
-            }
-            //检查是否有status，有的话则覆盖status
-            if (rule.hasOwnProperty("$status")) {
-                if (util.getObjType(rule.$status) != "number") {
-                    throw new Error(`$status:${rule.$status} is not a number`);
-                } else {
-                    status = rule.$status;
-                }
-            }
-
-            if (rule.hasOwnProperty("$delay")) {
-                if (util.getObjType(rule.$delay) != "number") {
-                    throw new Error(`$delay:${rule.$delay} is not a number`);
-                }
-                delay = rule.$delay;
-            }
-
-            if (rule.hasOwnProperty("$response")) {
-                switch (rule.$response) {
-                    case "file":
-                        {
-                            let filePath,
-                                fileName = null;
-                            if (!rule.hasOwnProperty("$filePath")) {
-                                throw new Error(`[Rule Error]: rule ${url} find $response:file without $filePath`);
-                            }
-
-                            if (!rule.hasOwnProperty("$fileName")) {
-                                throw new Error(`[Rule Error]: rule ${url} find $response:file without $fileName`);
-                            }
-
-                            if (util.getObjType(rule.$filePath) !== "function" && util.getObjType(rule.$filePath) !== "string") {
-                                throw new TypeError(`[Rule Error]: $filePath should be a function or a string`);
-                            }
-
-                            if (util.getObjType(rule.$fileName) !== "function" && util.getObjType(rule.$fileName) !== "string") {
-                                throw new TypeError(`[Rule Error]: $fileName should be a function or a string`);
-                            }
-
-                            if (!fs.existsSync(rule.$filePath)) {
-                                throw new Error(`[Rule Error]: ${rule.$filePath} does not extists`);
-                            }
-
-                            if (util.getObjType(rule.$filePath) == "function") {
-                                filePath = rule.$filePath();
-                            } else {
-                                filePath = rule.$filePath;
-                            }
-
-                            if (util.getObjType(rule.$fileName) == "function") {
-                                fileName = rule.$fileName();
-                            } else {
-                                fileName = rule.$fileName;
-                            }
-
-                            res.download(filePath, fileName);
-                            return;
-                        }
-                        break;
-                }
-            }
-            data = this.toJson(rule);
+            rule = data;
         }
+
+        //检查是否有status，有的话则覆盖status
+        if (rule.hasOwnProperty("$status")) {
+            if (util.getObjType(rule.$status) != "number") {
+                throw new Error(`$status:${rule.$status} is not a number`);
+            } else {
+                status = rule.$status;
+                delete rule.$status;
+            }
+        }
+
+        if (rule.hasOwnProperty("$delay")) {
+            if (isNaN(parseInt(rule.$delay))) {
+                throw new Error(`$delay:${rule.$delay} is not a number`);
+            }
+            delay = rule.$delay;
+            delete rule.$delay;
+        }
+        data = this.toJson(rule);
 
         setTimeout(function() {
             res.status(status);
             res.send(JSON.stringify(data));
         }, delay);
-
     }
 
     //查找请求的路径下是否有对应的数据文件  没有则返回 not defined

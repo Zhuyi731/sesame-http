@@ -10,7 +10,6 @@ const util = require("../../utils");
  */
 /*
     @demo
-    
     {
         ip1:{
             $type:"ip",
@@ -43,33 +42,34 @@ class IpRandomGenerator extends RandomGenerator {
     }
 
     checkOptions(opt) {
+        if (opt && opt.range) {
+            if (util.getObjType(opt.range) != "string") {
+                throw new TypeError("[ip generator]:range must be string");
+            }
 
-        if (util.getObjType(opt.range) != "string") {
-            throw new TypeError("[ip generator]:range must be string");
+            let arrs = opt.range.split(".");
+
+            if (arrs.length != 4) {
+                throw new Error("[ip generator]:range must be formated like xxx-xxx.xxx-xxx.xxx-xxx.xxx-xxx");
+            }
+
+            arrs.forEach((el, index) => {
+                let l = parseInt(el.split("-")[0]),
+                    r = parseInt(el.split("-").pop());
+
+                if (isNaN(l) || isNaN(r)) {
+                    throw new Error(`[ip generator]:at ${index} position of range option,a value is not a number`);
+                }
+
+                if (l < 0 || l > 255 || r < 0 || r > 255) {
+                    throw new Error(`[ip generator]:at ${index} position of range option,a value is outof range 0-255`);
+                }
+
+                if (l > r) {
+                    throw new Error(`[ip generator]:At ${el} the left value should be less than the right one`);
+                }
+            });
         }
-
-        let arrs = opt.range.split(".");
-
-        if (arrs.length != 4) {
-            throw new Error("[ip generator]:range must be formated like xxx-xxx.xxx-xxx.xxx-xxx.xxx-xxx");
-        }
-
-        arrs.forEach((el, index) => {
-            let l = parseInt(el.split("-")[0]),
-                r = parseInt(el.split("-").pop());
-
-            if (isNaN(l) || isNaN(r)) {
-                throw new Error(`[ip generator]:at ${index} position of range option,a value is not a number`);
-            }
-
-            if (l < 0 || l > 255 || r < 0 || r > 255) {
-                throw new Error(`[ip generator]:at ${index} position of range option,a value is outof range 0-255`);
-            }
-
-            if (l > r) {
-                throw new Error(`[ip generator]:At ${el} the left value should be less than the right one`);
-            }
-        });
     }
 
     random(opt) {
