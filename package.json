@@ -1,6 +1,6 @@
 {
   "name": "sesame-http",
-  "version": "0.0.9-beta",
+  "version": "0.0.10-beta",
   "description": "A mini http server that analog datas.",
   "main": "index.js",
   "scripts": {

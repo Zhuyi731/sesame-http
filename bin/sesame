@@ -7,7 +7,7 @@ const path = require("path");
 
 HelloSesame();
 
-program.version(require('../package').version)
+program.version(require('../package').version,"-v, --version")
     .usage('<command> [options],use order(open-sesame -h) for help information')
     .option("-p,--port <port>", "set a port which the http-server will listen to")
     .option("-w,--where", "set the path you want to listen")
